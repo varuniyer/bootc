@@ -1,0 +1,56 @@
+name: Attest test
+
+# Runs release.yml's packaging and attestation steps, without the app token, GPG key, tag
+# push, or release, for the version 0.0.0 under a local tag that the job never pushes.
+on:
+  push:
+    branches: [attest-test]
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  attest:
+    runs-on: ubuntu-latest
+    container: quay.io/coreos-assembler/fcos-buildroot:testing-devel
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        id: extract_version
+        run: |
+          echo "version=0.0.0" >> $GITHUB_OUTPUT
+          echo "TAG_NAME=v0.0.0" >> $GITHUB_OUTPUT
+
+      - name: Install deps
+        run: ./ci/installdeps.sh
+
+      - name: Mark git checkout as safe
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Tag the checkout locally
+        run: git tag v0.0.0
+
+      - name: Install vendor tool
+        run: cargo install cargo-vendor-filterer
+
+      - name: Run cargo xtask package
+        run: cargo xtask package
+
+      - name: Attest build provenance
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            target/bootc-${{ steps.extract_version.outputs.version }}.tar.zstd
+            target/bootc-${{ steps.extract_version.outputs.version }}-vendor.tar.zstd
+
+      - name: Upload archives
+        uses: actions/upload-artifact@v7
+        with:
+          name: archives
+          path: target/bootc-0.0.0*.tar.zstd
