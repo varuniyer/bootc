@@ -1,7 +1,7 @@
 name: Attest test
 
 # Runs release.yml's packaging and attestation steps, without the app token, GPG key, tag
-# push, or release, for the version 0.0.0 under a local tag that the job never pushes.
+# push, or release, for the version 0.0.0.attest under a local tag that the job never pushes.
 on:
   push:
     branches: [attest-test]
@@ -24,8 +24,8 @@ jobs:
       - name: Extract version
         id: extract_version
         run: |
-          echo "version=0.0.0" >> $GITHUB_OUTPUT
-          echo "TAG_NAME=v0.0.0" >> $GITHUB_OUTPUT
+          echo "version=0.0.0.attest" >> $GITHUB_OUTPUT
+          echo "TAG_NAME=v0.0.0-attest" >> $GITHUB_OUTPUT
 
       - name: Install deps
         run: ./ci/installdeps.sh
@@ -34,7 +34,7 @@ jobs:
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Tag the checkout locally
-        run: git tag v0.0.0
+        run: git tag v0.0.0-attest
 
       - name: Install vendor tool
         run: cargo install cargo-vendor-filterer
@@ -53,4 +53,4 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: archives
-          path: target/bootc-0.0.0*.tar.zstd
+          path: target/bootc-0.0.0.attest*.tar.zstd
